@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KYC Verification Service Demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        .drop-zone {
+            border: 2px dashed #cbd5e1;
+            transition: all 0.3s ease;
+        }
+        .drop-zone:hover {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .loader {
+            border-top-color: #3b82f6;
+            animation: spinner 1.5s linear infinite;
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans text-slate-900">
+    <div class="max-w-4xl mx-auto py-12 px-4">
+        <header class="mb-10 text-center">
+            <h1 class="text-4xl font-bold text-slate-900 mb-2">KYC Verification Demo</h1>
+            <p class="text-slate-600">Standalone AI-powered identity and vehicle document verification</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Form Section -->
+            <div class="md:col-span-2">
+                <form id="kycForm" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-6 space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold mb-2">Rider ID</label>
+                                <input type="text" name="rider_id" placeholder="e.g. R-12345" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold mb-2">Onboarding ID</label>
+                                <input type="text" name="onboarding_id" placeholder="e.g. ONB-998" class="w-full px-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+
+                        <hr class="border-slate-100">
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Required Documents -->
+                            <div class="space-y-4">
+                                <h3 class="font-bold text-slate-800">Identity Documents</h3>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Aadhaar Front (Required)</label>
+                                    <input type="file" name="aadhaar_front" accept="image/*" required class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Aadhaar Back (Required)</label>
+                                    <input type="file" name="aadhaar_back" accept="image/*" required class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Driving License (Required)</label>
+                                    <input type="file" name="driving_license" accept="image/*" required class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Selfie (Required)</label>
+                                    <input type="file" name="selfie" accept="image/*" required class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                </div>
+                            </div>
+
+                            <!-- Vehicle Documents -->
+                            <div class="space-y-4">
+                                <h3 class="font-bold text-slate-800">Vehicle Documents</h3>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Vehicle Plate Photo (Required)</label>
+                                    <input type="file" name="vehicle_plate_photo" accept="image/*" required class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">RC (Optional)</label>
+                                    <input type="file" name="rc" accept="image/*" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-6 border-t border-slate-100 flex items-center justify-between">
+                        <div id="statusIndicator" class="hidden flex items-center space-x-2 text-sm">
+                            <div class="loader ease-linear rounded-full border-2 border-t-2 border-slate-200 h-4 w-4"></div>
+                            <span class="text-slate-600">Processing verification...</span>
+                        </div>
+                        <button type="submit" id="submitBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl transition duration-200 flex items-center shadow-lg shadow-blue-200 disabled:opacity-50">
+                            Verify Documents
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Results Section -->
+            <div class="md:col-span-1">
+                <div id="resultCard" class="bg-white rounded-2xl shadow-sm border border-slate-200 h-full min-h-[400px] flex flex-col">
+                    <div class="p-6 border-b border-slate-100">
+                        <h2 class="font-bold text-lg">Verification Result</h2>
+                    </div>
+                    <div id="resultContent" class="p-6 flex-grow flex flex-col items-center justify-center text-center">
+                        <div class="text-slate-400 space-y-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <p>Upload documents to start verification pipeline</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="mt-12 space-y-4">
+            <h2 class="text-xl font-bold">API Documentation</h2>
+            <div class="bg-slate-900 rounded-xl p-6 text-slate-300 font-mono text-sm overflow-x-auto shadow-xl">
+                <p class="mb-4 text-blue-400"># Sample Curl Request</p>
+                <pre>curl -X POST "http://localhost:8000/kyc/verify" \
+  -H "Content-Type: multipart/form-data" \
+  -F "aadhaar_front=@aadhaar_front.jpg" \
+  -F "aadhaar_back=@aadhaar_back.jpg" \
+  -F "driving_license=@dl.jpg" \
+  -F "vehicle_plate_photo=@plate.jpg" \
+  -F "rider_id=RID123"</pre>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const form = document.getElementById('kycForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const resultContent = document.getElementById('resultContent');
+
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            
+            submitBtn.disabled = true;
+            statusIndicator.classList.remove('hidden');
+            resultContent.innerHTML = `<div class="animate-pulse flex flex-col items-center"><div class="rounded-full bg-slate-200 h-12 w-12 mb-4"></div><div class="h-4 bg-slate-200 rounded w-48 mb-2"></div><div class="h-4 bg-slate-200 rounded w-32"></div></div>`;
+
+            const formData = new FormData(form);
+            
+            try {
+                // Use relative path so it works whether accessing via localhost or other hostnames
+                const response = await fetch('/kyc/verify', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    let errorDetail = 'Verification request failed';
+                    try {
+                        const errData = await response.json();
+                        if (errData.detail) errorDetail = errData.detail;
+                    } catch (e) {
+                        // Ignore JSON parse error on error response
+                    }
+                    throw new Error(errorDetail);
+                }
+                
+                const data = await response.json();
+                displayResult(data);
+            } catch (error) {
+                resultContent.innerHTML = `
+                    <div class="text-red-500 p-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p class="font-bold">Verification Failed</p>
+                        <p class="text-sm mt-2 font-mono bg-red-50 p-2 rounded text-red-700 break-words">${error.message}</p>
+                    </div>
+                `;
+            } finally {
+                submitBtn.disabled = false;
+                statusIndicator.classList.add('hidden');
+            }
+        };
+
+        function displayResult(data) {
+            const statusColors = {
+                'VERIFIED': 'bg-green-100 text-green-700 border-green-200',
+                'NEEDS_REVIEW': 'bg-amber-100 text-amber-700 border-amber-200',
+                'REUPLOAD': 'bg-blue-100 text-blue-700 border-blue-200',
+                'REJECT': 'bg-red-100 text-red-700 border-red-200'
+            };
+
+            const colorClass = statusColors[data.status] || 'bg-slate-100 text-slate-700';
+            
+            let issuesHtml = '';
+            if (data.reasons && data.reasons.length > 0) {
+                issuesHtml = `
+                    <div class="mt-4 w-full text-left">
+                        <p class="text-xs font-bold text-slate-400 uppercase mb-2">Details</p>
+                        <ul class="space-y-1">
+                            ${data.reasons.map(r => `<li class="text-sm flex items-start text-slate-600"><span class="mr-2 text-blue-500">•</span>${r}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            // Render detailed check outputs (format, intra, cross)
+            const checks = (data.signals && data.signals.checks) || { format: [], intra: [], cross: [] };
+            const renderCheckList = (title, items) => {
+                if (!items || items.length === 0) {
+                    return `<div class="mb-2"><p class="text-xs font-semibold text-slate-400">${title}</p><p class="text-sm text-slate-600">None</p></div>`;
+                }
+                return `
+                    <div class="mb-2">
+                        <p class="text-xs font-semibold text-slate-400">${title}</p>
+                        <ul class="list-disc list-inside text-sm text-slate-600">
+                            ${items.map(i => `<li>${i}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            };
+
+            const checksHtml = `
+                <div class="mt-4 w-full text-left">
+                    <p class="text-xs font-bold text-slate-400 uppercase mb-2">Checks</p>
+                    <div class="bg-slate-50 rounded-lg p-3 text-sm text-slate-700">
+                        ${renderCheckList('Format checks', checks.format)}
+                        ${renderCheckList('Intra-document checks', checks.intra)}
+                        ${renderCheckList('Cross-document checks', checks.cross)}
+                    </div>
+                </div>
+            `;
+
+            resultContent.innerHTML = `
+                <div class="w-full">
+                    <div class="inline-block px-4 py-1 rounded-full border ${colorClass} font-bold text-sm mb-4">
+                        ${data.status}
+                    </div>
+                    
+                    <div class="mb-6">
+                        <p class="text-xs text-slate-400 uppercase font-bold mb-1">Confidence Score</p>
+                        <div class="text-4xl font-black">${(data.confidence * 100).toFixed(0)}%</div>
+                    </div>
+
+                    <hr class="border-slate-100 my-4">
+
+                    <div class="space-y-4">
+                        ${issuesHtml}
+                        
+                        <div class="text-left">
+                            <p class="text-xs font-bold text-slate-400 uppercase mb-2">Signals</p>
+                                <div class="bg-slate-50 rounded-lg p-3 text-sm text-slate-700 max-h-56 overflow-y-auto">
+                                    ${(() => {
+                                        // Quality per document
+                                        const quality = data.signals && data.signals.quality ? data.signals.quality : {};
+                                        const qItems = Object.keys(quality).map(k => {
+                                            const q = quality[k];
+                                            const signalsText = (q.signals && q.signals.length)>0 ? `<div class="text-xs text-slate-500">${q.signals.join('; ')}</div>` : '';
+                                            return `<div class="mb-2"><div class="font-semibold">${k}</div><div class="text-sm">${q.quality} (score: ${q.risk_score})</div>${signalsText}</div>`;
+                                        }).join('');
+
+                                        // Plate info
+                                        const plate = data.signals && data.signals.plate ? data.signals.plate : null;
+                                        const plateHtml = plate ? `<div class="mb-2"><div class="font-semibold">Plate</div><div class="text-sm">${plate.plate_number} — valid: ${plate.plate_valid} — ${Math.round((plate.confidence||0)*100)}%</div></div>` : '';
+
+                                        // Face match info
+                                        const face = data.signals && data.signals.face_match ? data.signals.face_match : null;
+                                        const faceHtml = face ? `<div class="mb-2"><div class="font-semibold">Face match</div><div class="text-sm">Same person: ${String(face.same_person)} — confidence: ${Math.round((face.confidence||0)*100)}% — risk: ${String(face.risk_level)}</div><div class="text-xs text-slate-500">${face.reasoning_summary || ''}</div><div class="mt-2 bg-slate-100 p-2 rounded text-xs font-mono overflow-auto"><pre>${JSON.stringify(face, null, 2)}</pre></div></div>` : '';
+
+                                        const suggested = (data.signals && data.signals.suggested_reuploads) || [];
+                                        const suggestedHtml = (suggested && suggested.length>0) ? `<div class="mb-2"><div class="font-semibold">Suggested reuploads</div><div class="text-sm">${suggested.join(', ')}</div></div>` : '';
+
+                                        return `
+                                            <div>${qItems}</div>
+                                            ${checksHtml}
+                                            ${plateHtml}
+                                            ${faceHtml}
+                                            ${suggestedHtml}
+                                        `;
+                                    })()}
+                                </div>
+                        </div>
+
+                        <div class="text-left">
+                            <p class="text-xs font-bold text-slate-400 uppercase mb-2">Extracted Data</p>
+                            <div class="bg-slate-900 text-slate-200 rounded-lg p-3 text-xs font-mono max-h-60 overflow-y-auto">
+                                <pre>${JSON.stringify(data.extracted, null, 2)}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
